@@ -13,8 +13,6 @@ import sys
 import getopt
 
 global api
-shodanAPIKey = "8t0SrW5P3emGYkm2rvWzQmcDOSdToYUV"
-api = shodan.Shodan(shodanAPIKey)
 
 global ips
 ips = []
@@ -99,10 +97,10 @@ def main(argv):
             sys.exit(0)
         elif opt in ("-k", "--key"):
             apikey = arg
-            #try:
-            #    api = shodan.Shodan(apikey)
-            #except shodan.APIError as error:
-            #    print("Error: {}".format(error))
+            try:
+                api = shodan.Shodan(apikey)
+            except shodan.APIError as error:
+                print("Error: {}".format(error))
         elif opt in ("-t", "--target"):
             target = arg
         elif opt in ("-i", "--iplist"):
