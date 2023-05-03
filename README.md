@@ -46,4 +46,15 @@ usage: python sshcrack.py [-k --key <api key>] [-t --target <target name>] [-i -
 -o --output <filename>        | Specify the name of an output file for successful logins
 -m --multi <thread number>    | Number of threads to be used during cracking (default is one)
 -x                            | X mode - runs cracking on all searched IPs immediately
--v --verbose                  | Verbose mode - display everything going on```
+-v --verbose                  | Verbose mode - display everything going on
+```
+
+# Examples
+```py sshcrack.py -k xxxxxxxxxxxx -t ftp -a ftp -m 6 -x -v```
+This will search for and automatically start cracking a list of ftp servers found by Shodan utilizing pseudo multi threading and the default wordlists of most common usernames and passwords for these systems. Verbose mode will tell you everything that is happening.
+
+```py sshcrack.py -k xxxxxxxxxxxx -i iplist.txt -u wordlists\usernames.txt -p wordlists\rockyou.txt -a ssh -o output.txt```
+This will conduct ssh cracking on the specified list of IP addresses using the specified wordlists and outputs to a specified file.
+
+```py sshcrack.py -k xxxxxxxxxxxx -t ssh -a ssh -i iplist.txt -x```
+Searches for an automatically starts cracking ssh servers that it found from a Shodan search after appending them to an existing IP list. This uses the default wordlists.
