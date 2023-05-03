@@ -50,11 +50,17 @@ usage: python sshcrack.py [-k --key <api key>] [-t --target <target name>] [-i -
 ```
 
 # Examples
-```py sshcrack.py -k xxxxxxxxxxxx -t ftp -a ftp -m 6 -x -v```
+```
+py sshcrack.py -k xxxxxxxxxxxx -t ftp -a ftp -m 6 -x -v
+```
 This will search for and automatically start cracking a list of ftp servers found by Shodan utilizing pseudo multi threading and the default wordlists of most common usernames and passwords for these systems. Verbose mode will tell you everything that is happening.
 
-```py sshcrack.py -k xxxxxxxxxxxx -i iplist.txt -u wordlists\usernames.txt -p wordlists\rockyou.txt -a ssh -o output.txt```
+```
+py sshcrack.py -k xxxxxxxxxxxx -i iplist.txt -u wordlists\usernames.txt -p wordlists\rockyou.txt -a ssh -o output.txt
+```
 This will conduct ssh cracking on the specified list of IP addresses using the specified wordlists and outputs to a specified file.
 
-```py sshcrack.py -k xxxxxxxxxxxx -t ssh -a ssh -i iplist.txt -x```
+```
+py sshcrack.py -k xxxxxxxxxxxx -t ssh -a ssh -i iplist.txt -x
+```
 Searches for an automatically starts cracking ssh servers that it found from a Shodan search after appending them to an existing IP list. This uses the default wordlists.
