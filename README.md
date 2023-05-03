@@ -42,7 +42,7 @@ usage: python sshcrack.py [-k --key <api key>] [-t --target <target name>] [-i -
                               (default will be common default ssh logins)
 -p --passlist <password list> | Specify a wordlist of passwords to enumerate through
                               (default will be common default ssh logins)
--a --attack <attack method>   | Method of attack (ssh, ftp)
+-a --attack <attack method>   | Method of attack (ssh, ftp, sftp)
 -o --output <filename>        | Specify the name of an output file for successful logins
 -m --multi <thread number>    | Number of threads to be used during cracking (default is one)
 -x                            | X mode - runs cracking on all searched IPs immediately
