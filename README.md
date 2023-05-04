@@ -3,7 +3,7 @@ Tool for cracking into SSH IoT devices with built in Shodan API capabilities for
 
 The idea came from a video by David Bombal interviewing with a hacker who's efforts were against the Russian Federation in assistance of Ukraine. He mainly hacked Russia's SCADA systems along with assistance from Shodan. My idea was to basically automate this process by iterating through a large number of targets utilizing python's pseudo multi threading for faster cracking.
 
-Currently this tool is only developed for Windows operating systems and for SSH, FTP, and SFTP cracking. Future versions will include Linux compatability as well as other common ports.
+Currently this tool is only developed for Windows operating systems and for SSH, FTP, SFTP, and Telnet cracking. Future versions will include Linux compatability as well as other common ports.
 
 **DISCLAIMER: Do Not Use This Tool For Any Illegal Purposes. I Am NOT Liable For Any Damages Caused By Using This Tool. This Is Purely For Educational And Learning Purposes.**
 
@@ -19,7 +19,7 @@ Run Python script with `python3 sshcrack.py -h` for the help screen
  | (___| (___ | |__| | |    | |__) |   /  \ | |    | ' /
   \___ \___ \ |  __  | |    |  _  /   / /\ \| |    |  <
   ____) |___) | |  | | |____| | \ \  / ____ \ |____| . \
- |_____/_____/|_|  |_|\_____|_|  \_\/_/    \_\_____|_|\_\  v1.0
+ |_____/_____/|_|  |_|\_____|_|  \_\/_/    \_\_____|_|\_\  v1.4
 
               Created by @BredSec
 
@@ -42,7 +42,7 @@ usage: python sshcrack.py [-k --key <api key>] [-t --target <target name>] [-i -
                               (default will be common default ssh logins)
 -p --passlist <password list> | Specify a wordlist of passwords to enumerate through
                               (default will be common default ssh logins)
--a --attack <attack method>   | Method of attack (ssh, ftp, sftp)
+-a --attack <attack method>   | Method of attack (ssh, ftp, sftp, telnet)
 -o --output <filename>        | Specify the name of an output file for successful logins
 -m --multi <thread number>    | Number of threads to be used during cracking (default is one)
 -x                            | X mode - runs cracking on all searched IPs immediately
